@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hack Slash</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+</head>
+<style type="text/css">
+    body {
+        color: #6EBBCB;
+        font: italic bold 12px/30px Arial, serif;
+        background-color: #C791CB;    
+        animation-name: background-color-keys;
+        animation-duration: 5s;
+        animation-iteration-count: infinite;
+        
+        /* Prevents hightlighting. */
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        
+        cursor: default;
+    }
+    
+    .hackslash { 
+        text-align: center;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .hackslash h1 {
+        font-size: 100px; 
+        text-decoration: underline;
+    }
+    
+    .kill-count {
+        font-size: 50px;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+    
+    #my-btn {
+        text-align: center;
+        box-shadow: 10px 10px 5px #888888;
+        border: 4px solid #6EBBCB; /* Green */
+        color: #C791CB;
+        background-color: #6EBBCB;
+        font-size: 30px;
+        animation-name: button-border-color-keys;
+        animation-duration: 5s;
+        animation-iteration-count: infinite;
+        padding: 10px;
+        line-height: 100px;
+    }
+    
+    @keyframes button-border-color-keys {
+        0% {
+            border-color: #C791CB;
+        }
+        
+        50% {
+            border-color: #6EBBCB;
+        }
+        
+        100% {
+            border-color: #C791CB;
+        }
+    }
+    
+    
+    @keyframes background-color-keys {
+        0% {
+            color: #C791CB;
+            /*opacity: 0;*/
+            background-color: #6EBBCB;
+        }
+        
+        50% {
+            color: #6EBBCB ;
+            background-color: #C791CB;
+        }
+        
+        100% {
+            color: #C791CB;
+            background-color: #6EBBCB;
+        }
+    }
+</style>
+<body>
+    <div id="app">
+        <img src="https://s-media-cache-ak0.pinimg.com/736x/88/b5/fd/88b5fd3a5008e0221e706d1370c8fd92.jpg" id="background-image">
+        <img src="" id="player-sprite">
+        <img src="" id="enemy-sprite">
+        <div class="hackslash">
+            <h1>Hack Slash</h1>
+            <canvas id="hack-slash" width="500px" height="500px" v-on:click="canvasClick"></canvas><br>
+            <div class="kill-count">{{ killCount }}</div>
+            <a id="my-btn" v-on:click="hack">{{ hackOrSlash }}</a>
+            <!--<a id="special-btn" v-on:click="useSpecial">{{ hackOrSlash }}</a>-->
+        </div>
+    </div>
+<script type="text/javascript">
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    
+    var randRangeReal = function(min, max) {
+        return min + Math.random() * (max - min);
+    }
+    
+    var randRange = function(min, max) {
+        return Math.floor(randRangeReal(min, max));
+    }
+    
+    var getTime = function() {
+        var d = new Date();
+        return d.getTime();
+    }
+    
+    var Coord = function(x, y) {
+        this.x = x;
+        this.y = y;
+    };
+    
+    var Rect = function(x, y, w, h) {
+        this.coord = new Coord(x, y);
+        this.w = w;
+        this.h = h;
+    }
+    
+    var RectObject = function(x, y, w, h, fillStyle, strokeStyle) {
+        this.rect = new Rect(x, y, w, h);
+        this.fillStyle = fillStyle;
+        this.strokeStyle = strokeStyle;
+    }
+    
+    RectObject.prototype.draw = function(ctx) {
+        ctx.fillStyle = this.fillStyle;
+        ctx.strokeStyle = this.strokeStyle;
+        ctx.fillRect(this.rect.coord.x, this.rect.coord.y, this.rect.w, this.rect.h);
+        ctx.strokeRect(this.rect.coord.x, this.rect.coord.y, this.rect.w, this.rect.h);
+    }
+    
+    RectObject.prototype.getX = function() { return this.rect.coord.x; }
+    RectObject.prototype.getY = function() { return this.rect.coord.y; }
+    RectObject.prototype.getW = function() { return this.rect.w; }
+    RectObject.prototype.getH = function() { return this.rect.h; }
+    
+    var Actor = function(rectObject, offsetCoefficient, damage, hpMax, idle, attack, scaleW, scaleH, barX) {
+    	this.rectObject = rectObject;
+    	this.offsetCoefficient = offsetCoefficient * 3;
+    	this.offset = 0;
+    	this.actionCoefficient = 1;
+    	this.hpMax = hpMax;
+    	this.hp    = this.hpMax;
+    	this.damage = damage;
+    	this.idle = idle;
+    	this.attack = attack;
+    	this.scaleW = scaleW;
+    	this.scaleH = scaleH;
+    	this.barX   = barX;
+    	this.attacking = false;
+    	this.animation = this.idle;
+    }
+    
+    Actor.prototype.doesHit = function(object) {
+    	this.offset = 10;
+    	this.actionCoefficient = 1;
+    	if (!this.attacking) {
+        	this.attacking = true;
+        	this.animation = this.attack;
+        	this.animation.reset();
+    	}
+    	return object.getsHit(this.damage);
+    }
+    
+    // Returns true if it kills them.
+    Actor.prototype.getsHit = function(damage) {
+    	this.offset = 5;
+    	this.actionCoefficient = -1;
+    	this.hp -= damage;
+    	
+    	if (this.hp <= 0) {
+    		this.hp = 0;
+    		return true;
+    	}
+    	
+    	return false;
+    }
+    
+    Actor.prototype.update = function() {
+    	if (this.offset > 0) {
+    		this.offset -= 1;
+    	}
+    }
+    
+    Actor.prototype.hpInc = function(amount) {
+        this.hp += amount;
+        if (this.hp > this.hpMax)
+            this.hp = this.hpMax;
+    }
+    
+    Actor.prototype.draw = function(ctx) {
+    	this.rectObject.rect.coord.x += this.getOffset();
+    	//this.rectObject.draw(ctx);
+    	
+        done = this.animation.draw(ctx, this.rectObject.getX(), this.rectObject.getY(), this.scaleW, this.scaleH, this.rectObject.getW(), this.rectObject.getH());
+        
+        if (done && this.attacking) {
+            this.attacking = false;
+            this.animation = this.idle;
+            this.animation.reset();
+        }
+    	
+    	// Move to end of this function if you want health bars to move.
+    	this.rectObject.rect.coord.x -= this.getOffset();
+    	
+    	var barHeight = 10;
+    	var barWidth = 100;
+    	var barTop = 300 //this.rectObject.getY() - 10 - barHeight;
+    	
+    	ctx.fillStyle = "#000";
+    	ctx.fillRect(this.barX, barTop,
+    	             barWidth, barHeight);
+    	
+    	ctx.fillStyle = "#0f0";
+    	ctx.fillRect(this.barX, barTop,
+    	             barWidth * this.hp / this.hpMax, barHeight);
+    	
+    	ctx.strokeStyle = "#111";
+    	ctx.strokeRect(this.barX, barTop,
+    	               barWidth, barHeight);
+    	               
+    	               
+    }
+    
+    Actor.prototype.getOffset = function() {
+    	return this.offset * this.offsetCoefficient * this.actionCoefficient;
+    }
+    
+    
+    var Enemy = function(damage, cooldown, decayValue, hpMax, attackFps, attackTimes) {
+    	this.actor = new Actor(
+    	    new RectObject(300, 335, 174, 100, "#d33", "#777"), -1, damage, hpMax,
+            new Animation("cuckoo/frame_", ".gif", 0, 2, 2, false, 1),
+            new Animation("cuckoo/frame_", ".gif", 0, 2, attackFps, false, attackTimes), 1, 1,
+            350
+        );
+        if (cooldown < 0) cooldown = 2;
+    	this.cooldownMaxSet = cooldown;
+    	this.cooldownMax    = this.cooldownMaxSet;
+    	this.cooldown       = this.cooldownMax;
+    	this.nextDrop       = .8;
+    	this.decayValue     = decayValue;
+    }
+    
+    Enemy.prototype.doesHit = function(object) {
+    	return this.actor.doesHit(object);
+    }
+    
+    Enemy.prototype.getsHit = function(damage) {
+    	var toReturn = this.actor.getsHit(damage);
+    	if (this.actor.hp / this.actor.hpMax < this.nextDrop) {
+    		this.cooldownMax -= this.decayValue;
+    		if (this.cooldownMax < 2)
+    		    this.cooldownMax = 2;
+    		this.nextDrop -= .2;
+    	}
+    	return toReturn;
+    }
+    
+    Enemy.prototype.update = function() {
+        this.actor.update();
+        if (this.cooldown <= 0) {
+            this.cooldown = this.cooldownMax;
+            if (this.doesHit(vm.player)) {
+                vm.winner = 2;
+                vm.lose();
+            }
+        }
+        else {
+            this.cooldown -= 1;
+        }
+    }
+    
+    Enemy.prototype.draw = function(ctx) { this.actor.draw(ctx); }
+    
+    var Animation = function(filePrefix, fileSuffix, frameStart, frameEnd, fps, flip, doneMax) {
+        this.frame = 0;
+        this.frameCount = frameEnd - frameStart;
+        this.fps = fps;
+        var t = new Date();
+        this.lastTime = t.getTime();
+        
+        this.flip = flip;
+        this.advance = true;
+        this.doneMax = doneMax;
+        this.doneCount = 0;
+        
+        
+        this.images = [];
+        for (var i = 0; i < this.frameCount; ++i) {
+            this.images.push(new Image());
+            this.images[i].src = filePrefix + (frameStart + i) + fileSuffix;
+            
+        }
+    }
+    
+    
+    Animation.prototype.draw = function(ctx, x, y, scaleW, scaleH, w, h) {
+        var done = false;
+        var date = new Date();
+        var time = date.getTime();
+        var frameDuration = 1000 / this.fps;
+        
+        if (time - this.lastTime >= frameDuration) {
+            if (this.flip) {
+                if (this.advance) {
+                    if (this.frame == this.frameCount - 1) {
+                        this.advance = false;
+                        done = true;
+                    }
+                    else ++this.frame;
+                }
+                else {
+                    if (this.frame == 0) {
+                        this.advance = true;
+                        done = true;
+                    }
+                    else --this.frame;
+                }
+            }
+            
+            else {
+                if (this.frame == this.frameCount - 1) {
+                    this.frame = 0;
+                    done = true;
+                }
+                else ++this.frame;
+            }
+            
+            this.lastTime = time;
+        }
+            
+        ctx.save();
+        
+        ctx.translate(x + w/2, y + h/2);
+        ctx.scale(scaleW, scaleH);
+        ctx.drawImage(this.images[this.frame], -w/2, -h/2, w, h);
+        
+        ctx.restore();
+        
+        if (done) {
+            if (this.doneCount < this.doneMax - 1) {
+                ++this.doneMax;
+            }
+            else {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    Animation.prototype.reset = function() {
+        this.frame = 0;
+        
+        var d = new Date();
+        this.lastTime = d.getTime();
+        
+        this.doneCount = 0;
+    }
+    
+    var PowerUpTypes = {
+        "_FIRST" : 1,
+        "_LAST"  : 3,
+        
+        "HEALTH_UP"         : 1,
+        "ENEMY_HEALTH_DOWN" : 2,
+        "POWER_CHARGE"      : 3
+    };
+    
+    var PowerUp = function(canvas) {
+        var minLifespan = 5;
+        var maxLifeSpan = 10;
+        
+        this.x = randRange(0, canvas.width);
+        this.y = randRange(0, canvas.height);
+        this.r = 10;
+        
+        this.type = randRange(PowerUpTypes._FIRST, PowerUpTypes._LAST + 1);
+        
+        this.deathTime = getTime() + randRange(
+            minLifespan * 1000, maxLifeSpan * 1000
+        );
+    }
+    
+    PowerUp.prototype.update = function() {
+        
+    }
+    
+    PowerUp.prototype.draw = function(ctx) {
+        var color = undefined;
+        if (this.type == PowerUpTypes.HEALTH_UP) {
+            color = "#0f0";
+        }
+        else if (this.type == PowerUpTypes.ENEMY_HEALTH_DOWN) {
+            color = "#f00";
+        }
+        else if (this.type == PowerUpTypes.POWER_CHARGE) {
+            color = "#00f";
+        }
+        
+        ctx.fillStyle = color;
+        
+        ctx.arc(this.x, this.y, this.r, 0, 2*Math.PI);
+                 
+        ctx.fill();
+        
+    }
+    
+    $(document).ready(function() {
+        /*$(document).on('click', '#my-btn', function(e) {
+            e.preventDefault();
+            vm.hack();
+        });*/
+        
+        $(document).on('vlcick', '#my-btn', function(e) {
+            e.preventDefault();
+            vm.hack();
+        });
+    });
+
+
+    var vm = new Vue({
+      el: '#app',
+      data: {
+        hackOrSlash: 'Hack!',
+        winner: 0,
+        player: undefined,
+        enemy:  undefined,
+        enemyCountdownMax: 60,
+        enemyCountdown: 60,
+        killCount: 1,
+        lost: false,
+        ctx: undefined,
+        powerUps: []
+      },
+       methods: {
+            hack() {
+                if (this.hackOrSlash == 'Hack!') {
+                    this.hackOrSlash = 'Slash!';
+                }
+                else {
+                    this.hackOrSlash = 'Hack!';
+                }
+                
+                if (this.player.doesHit(this.enemy)) {
+                	this.killCount += 1;
+                	this.enemy  = new Enemy(
+                	    this.enemy.actor.damage + .05,
+                	    this.enemy.cooldownMaxSet - 6,
+                	    this.enemy.decayValue,
+                	    this.enemy.actor.hpMax + 5,
+                	    this.enemy.actor.attack.fps + 2,
+                	    this.enemy.actor.attack.doneMax + 1);
+                	this.player.hpMax += 10;
+                	this.player.hpInc(Math.round(this.player.hpMax * 0.35));
+                }
+            },
+            lose() {
+                this.lost = true;
+                $('#my-btn').remove();
+            },
+            canvasClick() {
+                for (var i = 0; i < this.powerUps.length; i++) {
+                    
+                }
+            }
+       },
+       mounted() {
+            $('#background-image').hide();
+            $('#sprite').hide();
+            var canvas = document.getElementById('hack-slash');
+            var ctx = canvas.getContext('2d');
+            this.ctx = ctx;
+            var img = document.getElementById("background-image");
+            
+            //this.powerUps.push(new PowerUp(canvas));
+        
+            this.player = new Actor(
+                new RectObject(0, 300, 254, 150, "#3d3",  "#777"),
+                1, 1, 100,
+                new Animation("player/frame_", ".gif", 0, 3, 10, true, 1),
+                new Animation("player/frame_", ".gif", 3, 16, 13, false, 1), -1, 1, 50
+            );
+            this.enemy = new Enemy(3, 100, 6, 50, 5, 1);
+            
+            var update = function() {
+                ctx.drawImage(img, 0, 0);
+                
+                if (!vm.lost) {
+                    
+                    vm.player.update();
+                    vm.enemy.update();
+                    
+                    if (vm.dev) {
+                        vm.hack();
+                    }
+                    
+                    vm.player.draw(ctx);
+                    vm.enemy.draw(ctx);
+                    
+                    for (var i = 0; i < this.powerUps.length; ++i) {
+                        this.powerUps[i].draw(ctx);
+                    }
+                }
+                else {
+                    var deathText = "death has come...";
+                    
+                    ctx.textAlign = "center";
+                    
+                    ctx.font = "51px Times";
+                    ctx.fillStyle = "#000";
+                    ctx.fillText(deathText, 250, 100)
+                    
+                    ctx.font = "50px Times";
+                    ctx.fillStyle = "#d00";
+                    ctx.fillText(deathText, 250, 100)
+                    
+                }
+           };
+           
+            // Frame rate.
+            var frameRate = 60;
+            
+            if (typeof gameLoop != "undefined")
+                clearInterval(gameLoop);
+            var gameLoop = setInterval(update, 1000/frameRate);
+       }
+    });
+</script>
+</body>
+</html>

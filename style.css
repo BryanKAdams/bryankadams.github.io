@@ -43,3 +43,7 @@ body {
 .btn-x1 {
 	padding: 1rem 2rem;
 }
+.hack-btn {
+	display: flex;
+	justify-content: center;
+}
