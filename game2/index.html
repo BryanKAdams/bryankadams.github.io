@@ -36,6 +36,9 @@
             max-width: 40px;
             position: fixed;
         }
+        #arrows div img:hover {
+            color: red;
+        }
 
         #arrows div {
             display: flex;
@@ -47,6 +50,9 @@
         #arrows div:nth-child(1) img {
             transform: rotate(270deg);
 
+        }
+        #arrows div:nth-child(1) img:hover{
+            color: red;
         }
 
         #arrows div:nth-child(2) img {
@@ -65,16 +71,16 @@
     <div id="background"><img src="mapo.png"></div>
     <div id="hero"><img src="link.gif"></div>
     <div id="arrows">
-        <div onmousedown="mouseDown1()" onmouseup="mouseUp1()">
+        <div ontouchstart="mouseDown1()" ontouchend="mouseUp1()">
             <img id="left" src="arrows-35-512.png">
         </div>
-        <div onmousedown="mouseDown2()" onmouseup="mouseUp2()">
+        <div ontouchstart="mouseDown2()" ontouchend="mouseUp2()">
             <img id="right" src="arrows-35-512.png">
         </div>
-        <div onmousedown="mouseDown3()" onmouseup="mouseUp3()">
+        <div ontouchstart="mouseDown3()" ontouchend="mouseUp3()">
             <img id="up" src="arrows-35-512.png">
         </div>
-        <div onmousedown="mouseDown4()" onmouseup="mouseUp4()">
+        <div ontouchstart="mouseDown4()" ontouchend="mouseUp4()">
             <img id="down" src="arrows-35-512.png">
         </div>
     </div>
