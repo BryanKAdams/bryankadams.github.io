@@ -26,16 +26,18 @@
 
         #hero img {
             width: 100%;
-            
+
         }
 
         #arrows {
-            display: flex;        }
+            display: flex;
+        }
 
         #arrows img {
             max-width: 40px;
             position: fixed;
         }
+
         #arrows div img:hover {
             color: red;
         }
@@ -51,7 +53,8 @@
             transform: rotate(270deg);
 
         }
-        #arrows div:nth-child(1) img:hover{
+
+        #arrows div:nth-child(1) img:hover {
             color: red;
         }
 
@@ -64,6 +67,20 @@
             transform: rotate(180deg);
 
         }
+
+        .img-container {
+            position: relative;
+        }
+
+        .img-container:after {
+            content: " ";
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 99;
+        }
     </style>
 </head>
 
@@ -71,16 +88,16 @@
     <div id="background"><img src="mapo.png"></div>
     <div id="hero"><img src="link.gif"></div>
     <div id="arrows">
-        <div onpointerdown="mouseDown1()" onpointerup="mouseUp1()">
+        <div class="img-container" onpointerdown="mouseDown1()" onpointerup="mouseUp1()">
             <img id="left" src="arrows-35-512.png">
         </div>
-        <div onpointerdown="mouseDown2()" onpointerup="mouseUp2()">
+        <div class="img-container" onpointerdown="mouseDown2()" onpointerup="mouseUp2()">
             <img id="right" src="arrows-35-512.png">
         </div>
-        <div onpointerdown="mouseDown3()" onpointerup="mouseUp3()">
+        <div class="img-container" onpointerdown="mouseDown3()" onpointerup="mouseUp3()">
             <img id="up" src="arrows-35-512.png">
         </div>
-        <div onpointerdown="mouseDown4()" onpointerup="mouseUp4()">
+        <div class="img-container" onpointerdown="mouseDown4()" onpointerup="mouseUp4()">
             <img id="down" src="arrows-35-512.png">
         </div>
     </div>
@@ -162,16 +179,16 @@
             hero.y += 20 + hero.gravitySpeed;
         }
         function handleControls() {
-            if (controller.up || document.querySelector('#arrows div:nth-child(3)').style.color =="red") {
+            if (controller.up || document.querySelector('#arrows div:nth-child(3)').style.color == "red") {
                 hero.y -= HERO_MOVEMENT * 6;
             }
-            if (controller.down || document.querySelector('#arrows div:nth-child(4)').style.color =="red") {
+            if (controller.down || document.querySelector('#arrows div:nth-child(4)').style.color == "red") {
                 hero.y += HERO_MOVEMENT;
             }
-            if (controller.left || document.querySelector('#arrows div:nth-child(1)').style.color =="red") {
+            if (controller.left || document.querySelector('#arrows div:nth-child(1)').style.color == "red") {
                 hero.x -= HERO_MOVEMENT;
             }
-            if (controller.right || document.querySelector('#arrows div:nth-child(2)').style.color =="red") {
+            if (controller.right || document.querySelector('#arrows div:nth-child(2)').style.color == "red") {
                 hero.x += HERO_MOVEMENT;
             }
             ensureBounds(hero);
