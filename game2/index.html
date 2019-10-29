@@ -47,7 +47,7 @@
             justify-content: center;
             flex-direction: row;
             width: 100%;
-            touch-action: manipulation;
+            touch-action: manipulation
         }
 
         #arrows div:nth-child(1) img {
@@ -89,20 +89,30 @@
     <div id="background"><img src="mapo.png"></div>
     <div id="hero"><img src="link.gif"></div>
     <div id="arrows">
-        <div class="img-container" oncontextmenu="return false;"; onpointerdown="mouseDown1()" onpointerup="mouseUp1()">
+        <div class="img-container" oncontextmenu="return false;" ; onpointerdown="mouseDown1()"
+            onpointerup="mouseUp1()">
             <img id="left" src="arrows-35-512.png">
         </div>
-        <div class="img-container" oncontextmenu="return false;"; onpointerdown="mouseDown2()" onpointerup="mouseUp2()">
+        <div class="img-container" oncontextmenu="return false;" ; onpointerdown="mouseDown2()"
+            onpointerup="mouseUp2()">
             <img id="right" src="arrows-35-512.png">
         </div>
-        <div class="img-container" oncontextmenu="return false;"; onpointerdown="mouseDown3()" onpointerup="mouseUp3()">
+        <div class="img-container" oncontextmenu="return false;" ; onpointerdown="mouseDown3()"
+            onpointerup="mouseUp3()">
             <img id="up" src="arrows-35-512.png">
         </div>
-        <div class="img-container" oncontextmenu="return false;"; onpointerdown="mouseDown4()" onpointerup="mouseUp4()">
+        <div class="img-container" oncontextmenu="return false;" ; onpointerdown="mouseDown4()"
+            onpointerup="mouseUp4()">
             <img id="down" src="arrows-35-512.png">
         </div>
     </div>
     <script>
+        window.addEventListener("keydown", function (e) {
+            // space and arrow keys
+            if ([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+                e.preventDefault();
+            }
+        }, false);
 
         var LEFT_KEY = 37;
         var UP_KEY = 38;
@@ -168,7 +178,7 @@
             e.style.top = sprite.y + 'px';
         }
         function ifInAir() {
-            if (hero.y != 255) {
+            if (hero.y != 261) {
                 controller.up = false;
                 UP_KEY = null;
                 document.querySelector("#arrows div:nth-child(3)").style.color = "green";
@@ -204,8 +214,8 @@
             if (sprite.x + sprite.w > 3600) {
                 sprite.x = 3600 - sprite.w;
             }
-            if (sprite.y + sprite.h > 410) {
-                sprite.y = 410 - sprite.h;
+            if (sprite.y + sprite.h > 416) {
+                sprite.y = 416 - sprite.h;
             }
 
         }
